@@ -1,0 +1,12 @@
+{
+  "name": "liveapiio/liveapi-php",
+  "description": "PHP client for the LiveAPI reference-data API.",
+  "type": "library",
+  "require": {
+    "php": ">=8.1",
+    "ext-json": "*"
+  },
+  "autoload": {
+    "classmap": ["src/"]
+  }
+}
