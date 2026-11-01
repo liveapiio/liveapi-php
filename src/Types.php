@@ -201,6 +201,9 @@ final class IpLocation
         public readonly ?string $source,
         public readonly ?string $attribution,
         public readonly ?string $attributionUrl,
+        public readonly ?bool $isTor = null,
+        public readonly ?bool $isHosting = null,
+        public readonly ?string $hostingProvider = null,
     ) {}
 
     /** @param array<string, mixed> $row */
@@ -244,6 +247,9 @@ final class IpLocation
             Value::str($row, "source"),
             Value::str($row, "attribution"),
             Value::str($row, "attribution_url"),
+            Value::nullableBool($row, "is_tor"),
+            Value::nullableBool($row, "is_hosting"),
+            Value::str($row, "hosting_provider"),
         );
     }
 }
@@ -591,5 +597,188 @@ final class VatCheck
     public static function from(array $row): self
     {
         return new self((string) ($row["country_code"] ?? ""), (string) ($row["vat_number"] ?? ""), Value::bool($row, "valid"), Value::str($row, "name"), Value::str($row, "address"), (string) ($row["request_date"] ?? ""), (string) ($row["source"] ?? ""));
+    }
+}
+
+final class IdValidator
+{
+    public function __construct(
+        public readonly string $country,
+        public readonly string $type,
+        public readonly string $name,
+        public readonly string $holder,
+        public readonly string $description,
+        public readonly string $example,
+        public readonly string $path,
+    ) {}
+
+    /** @param array<string, mixed> $row */
+    public static function from(array $row): self
+    {
+        return new self((string) ($row["country"] ?? ""), (string) ($row["type"] ?? ""), (string) ($row["name"] ?? ""), (string) ($row["holder"] ?? ""), (string) ($row["description"] ?? ""), (string) ($row["example"] ?? ""), (string) ($row["path"] ?? ""));
+    }
+}
+
+final class IdValidation
+{
+    /** @param array<string, mixed>|null $details */
+    public function __construct(
+        public readonly bool $valid,
+        public readonly ?string $normalized,
+        public readonly string $country,
+        public readonly string $type,
+        public readonly ?string $reason,
+        public readonly ?array $details,
+        public readonly bool $registryChecked,
+    ) {}
+
+    /** @param array<string, mixed> $row */
+    public static function from(array $row): self
+    {
+        return new self(Value::bool($row, "valid"), Value::str($row, "normalized"), (string) ($row["country"] ?? ""), (string) ($row["type"] ?? ""), Value::str($row, "reason"), is_array($row["details"] ?? null) ? $row["details"] : null, Value::bool($row, "registry_checked"));
+    }
+}
+
+final class PostalCodeCountry
+{
+    public function __construct(
+        public readonly string $country,
+        public readonly int $count,
+        public readonly bool $partial,
+        public readonly string $updated,
+    ) {}
+
+    /** @param array<string, mixed> $row */
+    public static function from(array $row): self
+    {
+        return new self((string) ($row["country"] ?? ""), Value::int($row, "count"), Value::bool($row, "partial"), (string) ($row["updated"] ?? ""));
+    }
+}
+
+final class PostalPlace
+{
+    public function __construct(
+        public readonly string $postalCode,
+        public readonly string $place,
+        public readonly ?string $admin1,
+        public readonly ?string $admin1Code,
+        public readonly ?string $admin2,
+        public readonly ?string $admin2Code,
+        public readonly ?string $admin3,
+        public readonly ?string $admin3Code,
+        public readonly ?float $latitude,
+        public readonly ?float $longitude,
+        public readonly ?int $accuracy,
+    ) {}
+
+    /** @param array<string, mixed> $row */
+    public static function from(array $row): self
+    {
+        return new self((string) ($row["postal_code"] ?? ""), (string) ($row["place"] ?? ""), Value::str($row, "admin1"), Value::str($row, "admin1_code"), Value::str($row, "admin2"), Value::str($row, "admin2_code"), Value::str($row, "admin3"), Value::str($row, "admin3_code"), Value::float($row, "latitude"), Value::float($row, "longitude"), Value::nullableInt($row, "accuracy"));
+    }
+}
+
+final class PostalCodeLookup
+{
+    /**
+     * @param list<PostalPlace> $places
+     * @param array<string, string> $attribution GeoNames, CC BY 4.0. Keep it when you show the data.
+     */
+    public function __construct(
+        public readonly string $country,
+        public readonly string $query,
+        public readonly string $postalCode,
+        public readonly string $match,
+        public readonly bool $partialData,
+        public readonly ?string $coverageNote,
+        public readonly array $places,
+        public readonly string $updated,
+        public readonly array $attribution,
+    ) {}
+
+    /** @param array<string, mixed> $row */
+    public static function from(array $row): self
+    {
+        $places = [];
+        foreach (is_array($row["places"] ?? null) ? $row["places"] : [] as $item) {
+            if (is_array($item)) {
+                $places[] = PostalPlace::from($item);
+            }
+        }
+        return new self((string) ($row["country"] ?? ""), (string) ($row["query"] ?? ""), (string) ($row["postal_code"] ?? ""), (string) ($row["match"] ?? ""), Value::bool($row, "partial_data"), Value::str($row, "coverage_note"), $places, (string) ($row["updated"] ?? ""), is_array($row["attribution"] ?? null) ? $row["attribution"] : []);
+    }
+}
+
+final class ReverseGeocode
+{
+    /**
+     * @param array{code: ?string, name: string, type: ?string}|null $admin1
+     * @param array{id: ?string, name: string, type: ?string}|null $admin2
+     */
+    public function __construct(
+        public readonly float $latitude,
+        public readonly float $longitude,
+        public readonly string $countryCode,
+        public readonly ?string $countryName,
+        public readonly ?array $admin1,
+        public readonly ?array $admin2,
+        public readonly string $precision,
+        public readonly string $attribution,
+    ) {}
+
+    /** @param array<string, mixed> $row */
+    public static function from(array $row): self
+    {
+        return new self((float) ($row["latitude"] ?? 0), (float) ($row["longitude"] ?? 0), (string) ($row["country_code"] ?? ""), Value::str($row, "country_name"), is_array($row["admin1"] ?? null) ? $row["admin1"] : null, is_array($row["admin2"] ?? null) ? $row["admin2"] : null, (string) ($row["precision"] ?? ""), (string) ($row["attribution"] ?? ""));
+    }
+}
+
+final class UserAgent
+{
+    /**
+     * @param array{name: ?string, version: ?string, major: ?string} $browser
+     * @param array{name: ?string, version: ?string} $engine
+     * @param array{name: ?string, version: ?string} $os
+     * @param array{type: string, vendor: ?string, model: ?string} $device
+     * @param array{architecture: ?string} $cpu
+     */
+    public function __construct(
+        public readonly string $ua,
+        public readonly array $browser,
+        public readonly array $engine,
+        public readonly array $os,
+        public readonly array $device,
+        public readonly array $cpu,
+        public readonly bool $isBot,
+        public readonly ?string $botMatch,
+    ) {}
+
+    /** @param array<string, mixed> $row */
+    public static function from(array $row): self
+    {
+        $part = static fn (string $key): array => is_array($row[$key] ?? null) ? $row[$key] : [];
+        return new self((string) ($row["ua"] ?? ""), $part("browser"), $part("engine"), $part("os"), $part("device"), $part("cpu"), Value::bool($row, "is_bot"), Value::str($row, "bot_match"));
+    }
+}
+
+final class BarcodeValidation
+{
+    public function __construct(
+        public readonly string $input,
+        public readonly string $normalized,
+        public readonly bool $valid,
+        public readonly ?string $type,
+        public readonly ?string $reason,
+        public readonly ?string $checkDigit,
+        public readonly ?string $expectedCheckDigit,
+        public readonly ?string $gtin14,
+        public readonly ?string $isbn10,
+        public readonly ?string $isbn13,
+    ) {}
+
+    /** @param array<string, mixed> $row */
+    public static function from(array $row): self
+    {
+        return new self((string) ($row["input"] ?? ""), (string) ($row["normalized"] ?? ""), Value::bool($row, "valid"), Value::str($row, "type"), Value::str($row, "reason"), Value::str($row, "check_digit"), Value::str($row, "expected_check_digit"), Value::str($row, "gtin14"), Value::str($row, "isbn10"), Value::str($row, "isbn13"));
     }
 }

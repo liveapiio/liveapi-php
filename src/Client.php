@@ -188,6 +188,49 @@ final class Client
     /** @param array<string, scalar|null> $query
      * @param array<string, mixed>|null $body
      * @return array<string, mixed>|list<mixed> */
+    /** @return list<IdValidator> National ID, tax and company number checks. */
+    public function idValidators(): array
+    {
+        $body = $this->json("GET", "/v1/validate");
+        return array_map(static fn (array $row): IdValidator => IdValidator::from($row), is_array($body["data"] ?? null) ? $body["data"] : []);
+    }
+
+    /** Checks a national number offline, for example ("ES", "nif", "12345678Z"). */
+    public function validateId(string $country, string $type, string $value): IdValidation
+    {
+        return IdValidation::from($this->json("POST", "/v1/validate/" . rawurlencode($country) . "/" . rawurlencode($type), ["value" => $value]));
+    }
+
+    /** @return list<PostalCodeCountry> Covered countries. Data: GeoNames, CC BY 4.0. */
+    public function postalCodeCountries(): array
+    {
+        $body = $this->json("GET", "/v1/postal-codes");
+        return array_map(static fn (array $row): PostalCodeCountry => PostalCodeCountry::from($row), is_array($body["data"] ?? null) ? $body["data"] : []);
+    }
+
+    public function postalCode(string $country, string $code): PostalCodeLookup
+    {
+        return PostalCodeLookup::from($this->json("GET", "/v1/postal-codes/" . rawurlencode($country) . "/" . rawurlencode($code)));
+    }
+
+    /** Country and administrative area for a point. */
+    public function reverseGeocode(float $latitude, float $longitude): ReverseGeocode
+    {
+        return ReverseGeocode::from($this->json("GET", "/v1/reverse", null, ["lat" => (string) $latitude, "lon" => (string) $longitude]));
+    }
+
+    /** Parses a User-Agent string, for example $_SERVER["HTTP_USER_AGENT"]. */
+    public function parseUserAgent(string $ua): UserAgent
+    {
+        return UserAgent::from($this->json("POST", "/v1/user-agent", ["ua" => $ua]));
+    }
+
+    /** Checks an EAN-8, UPC-A, EAN-13, GTIN-14 or ISBN check digit. */
+    public function validateBarcode(string $code): BarcodeValidation
+    {
+        return BarcodeValidation::from($this->json("GET", "/v1/barcodes/validate", null, ["code" => $code]));
+    }
+
     private function json(string $method, string $path, ?array $body = null, array $query = []): array
     {
         [$status, $raw] = $this->send($method, $path, $query, $body, "application/json");
