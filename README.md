@@ -9,6 +9,8 @@ $client = new LiveApi\Client(getenv('LIVEAPI_TOKEN'));
 $phone = $client->validatePhone('0555 111 22 33', 'TR');
 ```
 
+Use `$client->country("TR", true)` to request the optional GeoJSON country boundary and attribution.
+
 ```
 composer config repositories.liveapi vcs https://github.com/liveapiio/liveapi-php
 composer require liveapiio/liveapi-php:dev-main
@@ -26,4 +28,4 @@ $client->parseUserAgent($_SERVER["HTTP_USER_AGENT"] ?? "");
 
 Docs: https://liveapi.io/docs
 
-IP lookups include `attribution` and `attribution_url`. Keep those fields when you store or show a DB-IP result. Postal-code results carry a GeoNames `attribution` (CC BY 4.0); keep it too. A validation result with `valid` false is still HTTP 200 and uses one call. Only a non-2xx response is free.
+IP lookups include `attribution` and `attribution_url`. Keep those fields when you store or show a DB-IP result. Postal-code results identify LiveAPI's in-house dataset. A validation result with `valid` false is still HTTP 200 and uses one call. Only a non-2xx response is free.

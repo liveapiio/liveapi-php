@@ -68,7 +68,9 @@ final class Language
 final class Country
 {
     /** @param list<Currency> $currencies
-     * @param list<Language> $languages */
+     * @param list<Language> $languages
+     * @param array<string, mixed>|null $geoshape
+     * @param array<string, mixed>|null $geoshapeAttribution */
     public function __construct(
         public readonly string $code,
         public readonly string $iso3,
@@ -89,6 +91,8 @@ final class Country
         public readonly array $languages,
         public readonly ?string $callingCode,
         public readonly bool $inEu,
+        public readonly ?array $geoshape = null,
+        public readonly ?array $geoshapeAttribution = null,
     ) {}
 
     /** @param array<string, mixed> $row */
@@ -126,6 +130,8 @@ final class Country
             $languages,
             Value::str($row, "calling_code"),
             Value::bool($row, "in_eu"),
+            is_array($row["geoshape"] ?? null) ? $row["geoshape"] : null,
+            is_array($row["geoshape_attribution"] ?? null) ? $row["geoshape_attribution"] : null,
         );
     }
 }
@@ -682,7 +688,7 @@ final class PostalCodeLookup
 {
     /**
      * @param list<PostalPlace> $places
-     * @param array<string, string> $attribution GeoNames, CC BY 4.0. Keep it when you show the data.
+     * @param array<string, string> $attribution LiveAPI in-house postal dataset.
      */
     public function __construct(
         public readonly string $country,

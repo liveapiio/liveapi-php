@@ -39,9 +39,9 @@ final class Client
         return array_map(Country::from(...), $this->json("GET", "/v1/countries", query: ["q" => $query]));
     }
 
-    public function country(string $code): Country
+    public function country(string $code, bool $includeGeoshape = false): Country
     {
-        return Country::from($this->json("GET", "/v1/countries/" . rawurlencode($code)));
+        return Country::from($this->json("GET", "/v1/countries/" . rawurlencode($code), query: ["include" => $includeGeoshape ? "geoshape" : null]));
     }
 
     /** @return list<Division> */
@@ -201,7 +201,7 @@ final class Client
         return IdValidation::from($this->json("POST", "/v1/validate/" . rawurlencode($country) . "/" . rawurlencode($type), ["value" => $value]));
     }
 
-    /** @return list<PostalCodeCountry> Covered countries. Data: GeoNames, CC BY 4.0. */
+    /** @return list<PostalCodeCountry> Covered countries. Data produced by LiveAPI. */
     public function postalCodeCountries(): array
     {
         $body = $this->json("GET", "/v1/postal-codes");
